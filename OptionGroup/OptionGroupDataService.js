@@ -157,6 +157,7 @@
                 var allOptionGroups = getallOptionGroups();
                 var productIdtoActionDOMap = {};
                 
+                
                 _.each(constraintActionDoList, function(ActionDo){
                     // get all error messages and add to MessageService.
                     var TriggeringProductIds = ActionDo.TriggeringProductIds;
