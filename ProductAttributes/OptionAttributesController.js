@@ -140,6 +140,18 @@
             }
         }
 
+        $scope.seatTypeExpressions = function(attributes){
+            var count = $scope.optionGroupService.seatTypeCount;
+            _.each($scope.AttributeGroups, function(attrGroups){
+                _.each(attrGroups.productAtributes, function(item){
+                    if(item.fieldName == 'Total_Seats__c'){
+                        item.isReadOnly = true;
+                        $scope.productAttributeValues['Total_Seats__c'] = count;
+                    }
+                });
+            });
+        }
+
         $scope.init();
     }
     OptionAttributesController.$inject = ['$scope', '$log', 'RemoteService', 'LocationDataService', 'OptionGroupDataService', 'ProductAttributeConfigDataService', 'ProductAttributeValueDataService', 'PAVObjConfigService', 'RemoteService'];
