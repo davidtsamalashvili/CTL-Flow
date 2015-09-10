@@ -168,6 +168,7 @@
                 if(_.has(allproductIdtoPAVMap, bundleProdId))
                 {
                     var bundlePAV = allproductIdtoPAVMap[bundleProdId];
+                    bundlePAV['Total_Seats__c'] = $scope.optionGroupService.seatTypeCount;
                     // Other picklist is selected then set OtherSelected to true.
                     if(!_.isUndefined(_.findKey(bundlePAV, function(value, pavField){return pavField.endsWith('Other');}))){
                         otherSelected_bundle = true;
