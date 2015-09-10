@@ -1,7 +1,7 @@
 (function() {
     var OptionAttributesController;
 
-    OptionAttributesController = function($scope, $log, RemoteService, LocationDataService, OptionGroupDataService, ProductAttributeConfigDataService, ProductAttributeValueDataService, PAVObjConfigService) {
+    OptionAttributesController = function($scope, $log, RemoteService, LocationDataService, OptionGroupDataService, ProductAttributeConfigDataService, ProductAttributeValueDataService, PAVObjConfigService, RemoteService) {
         $scope.init = function(){
             // all variable intializations.
             $scope.locationService = LocationDataService;
@@ -29,10 +29,13 @@
         });
 
         // Option Attribute load on option selection.
-        $scope.$watch('optionGroupService.getSelectedoptionproduct()', function(newVal, oldVal) {
-            if(!_.isEmpty(newVal)
+        $scope.$watch('optionGroupService.getSelectedoptionproduct()', function(newVal, oldVal) {           
+            /*           
+           if(!_.isEmpty(newVal)
                 && !_.isEqual(newVal, oldVal))
             {
+                */
+            if(!_.isEmpty(newVal)){
                 $scope.Selectedoptionproduct = newVal;
                 var optionProductId = newVal.productId;
                 $scope.retrieveproductattributeGroupData(optionProductId);
@@ -79,6 +82,7 @@
             $scope.productAttributeValues = pav;
             $scope.CascadeBunleAttributestoOptions();
             $scope.optionLevelAttributeChange();
+            $scope.seatTypeExpressions(attrgroups, pav);
             $scope.safeApply();   
         }
 
@@ -138,6 +142,6 @@
 
         $scope.init();
     }
-    OptionAttributesController.$inject = ['$scope', '$log', 'RemoteService', 'LocationDataService', 'OptionGroupDataService', 'ProductAttributeConfigDataService', 'ProductAttributeValueDataService', 'PAVObjConfigService'];
+    OptionAttributesController.$inject = ['$scope', '$log', 'RemoteService', 'LocationDataService', 'OptionGroupDataService', 'ProductAttributeConfigDataService', 'ProductAttributeValueDataService', 'PAVObjConfigService', 'RemoteService'];
     angular.module('APTPS_ngCPQ').controller('OptionAttributesController', OptionAttributesController);
 }).call(this);

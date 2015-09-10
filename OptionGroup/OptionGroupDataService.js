@@ -1,94 +1,95 @@
 (function() {
-	angular.module('APTPS_ngCPQ').service('OptionGroupDataService', OptionGroupDataService); 
-	OptionGroupDataService.$inject = ['$q', '$log', 'BaseService', 'QuoteDataService', 'RemoteService', 'MessageService', 'OptionGroupCache'];
-	function OptionGroupDataService($q, $log, BaseService, QuoteDataService, RemoteService, MessageService, OptionGroupCache) {
-		var service = this;
+    angular.module('APTPS_ngCPQ').service('OptionGroupDataService', OptionGroupDataService); 
+    OptionGroupDataService.$inject = ['$q', '$log', 'BaseService', 'QuoteDataService', 'RemoteService', 'MessageService', 'OptionGroupCache'];
+    function OptionGroupDataService($q, $log, BaseService, QuoteDataService, RemoteService, MessageService, OptionGroupCache) {
+        var service = this;
 
-		service.quoteService = QuoteDataService;
-		service.Selectedoptionproduct = {};
-		service.currentproductoptiongroups = {};
-		service.rerenderHierarchy = false;
-		service.slectedOptionGroupProdId;
+        service.quoteService = QuoteDataService;
+        service.Selectedoptionproduct = {};
+        service.currentproductoptiongroups = {};
+        service.rerenderHierarchy = false;
+        service.slectedOptionGroupProdId;
+        service.seatTypeCount = 0;
 
-		// option group methods.
-		service.getallOptionGroups = getallOptionGroups;
-		service.getOptionGroup = getOptionGroup;
-		service.runConstraintRules = runConstraintRules;
-		service.getSelectedoptionproduct = getSelectedoptionproduct;
-		service.setSelectedoptionproduct = setSelectedoptionproduct;
-		service.getcurrentproductoptiongroups = getcurrentproductoptiongroups;
-		service.getrerenderHierarchy = getrerenderHierarchy;
-		service.setrerenderHierarchy = setrerenderHierarchy;
-		service.getslectedOptionGroupProdId = getslectedOptionGroupProdId;
-		service.setslectedOptionGroupProdId = setslectedOptionGroupProdId;
-		
-		function getallOptionGroups(){
-			return OptionGroupCache.getOptionGroups();
-		}
+        // option group methods.
+        service.getallOptionGroups = getallOptionGroups;
+        service.getOptionGroup = getOptionGroup;
+        service.runConstraintRules = runConstraintRules;
+        service.getSelectedoptionproduct = getSelectedoptionproduct;
+        service.setSelectedoptionproduct = setSelectedoptionproduct;
+        service.getcurrentproductoptiongroups = getcurrentproductoptiongroups;
+        service.getrerenderHierarchy = getrerenderHierarchy;
+        service.setrerenderHierarchy = setrerenderHierarchy;
+        service.getslectedOptionGroupProdId = getslectedOptionGroupProdId;
+        service.setslectedOptionGroupProdId = setslectedOptionGroupProdId;
+        
+        function getallOptionGroups(){
+            return OptionGroupCache.getOptionGroups();
+        }
 
-		function getOptionGroups(productIds) {
-			// check if cachedOptionGroups has products requested for else make a remote call.
-			var cachedOptionGroups = OptionGroupCache.getOptionGroups();
-			var prodIds_filtered = _.filter(productIds, function(Id){ return !cachedOptionGroups.hasOwnProperty(Id); });
-			if (OptionGroupCache.isValid
-				&& prodIds_filtered.length < 1) {
-				// logTransaction(cachedOptionGroups);
-				return $q.when(cachedOptionGroups);
-			}
+        function getOptionGroups(productIds) {
+            // check if cachedOptionGroups has products requested for else make a remote call.
+            var cachedOptionGroups = OptionGroupCache.getOptionGroups();
+            var prodIds_filtered = _.filter(productIds, function(Id){ return !cachedOptionGroups.hasOwnProperty(Id); });
+            if (OptionGroupCache.isValid
+                && prodIds_filtered.length < 1) {
+                // logTransaction(cachedOptionGroups);
+                return $q.when(cachedOptionGroups);
+            }
 
-			// locationRequest = createOptionGroupRequestDO(prodIds_filtered, QuoteDataService.getcartId(), QuoteDataService.getcontextLineNumber());
-			var requestPromise = RemoteService.getproductoptiongroupsData(prodIds_filtered, QuoteDataService.getcartId(), QuoteDataService.getcontextLineNumber());
-			BaseService.startprogress();// start progress bar.
-			return requestPromise.then(function(response){
-				OptionGroupCache.initializeOptionGroups(response);
-				// run constraint rules on each load of OptionGroups.
-				// runConstraintRules should be refacotored lated to apply constraint rules only once.
-				return runConstraintRules().then(function(constraintsResult){
-                	BaseService.setOptionGroupLoadComplete();    
+            // locationRequest = createOptionGroupRequestDO(prodIds_filtered, QuoteDataService.getcartId(), QuoteDataService.getcontextLineNumber());
+            var requestPromise = RemoteService.getproductoptiongroupsData(prodIds_filtered, QuoteDataService.getcartId(), QuoteDataService.getcontextLineNumber());
+            BaseService.startprogress();// start progress bar.
+            return requestPromise.then(function(response){
+                OptionGroupCache.initializeOptionGroups(response);
+                // run constraint rules on each load of OptionGroups.
+                // runConstraintRules should be refacotored lated to apply constraint rules only once.
+                return runConstraintRules().then(function(constraintsResult){
+                    BaseService.setOptionGroupLoadComplete();    
                     return OptionGroupCache.getOptionGroups();
                 })
-				// logTransaction(response, categoryRequest);
-				// return OptionGroupCache.getOptionGroups();
-			});
-		}
+                // logTransaction(response, categoryRequest);
+                // return OptionGroupCache.getOptionGroups();
+            });
+        }
 
-		function getOptionGroup(productId) {
-			var cachedOptionGroups = OptionGroupCache.getOptionGroups();
-			if (OptionGroupCache.isValid
-				&& _.has(cachedOptionGroups, productId)){
-				setcurrentproductoptiongroups(cachedOptionGroups[productId]);
-				return $q.when(true);
-			}
+        function getOptionGroup(productId) {
+            var cachedOptionGroups = OptionGroupCache.getOptionGroups();
+            if (OptionGroupCache.isValid
+                && _.has(cachedOptionGroups, productId)){
+                setcurrentproductoptiongroups(cachedOptionGroups[productId]);
+                return $q.when(true);
+            }
 
-			var bundleproductIds = [];
+            var bundleproductIds = [];
             if(!_.isEmpty(service.currentproductoptiongroups))
             {
                 bundleproductIds = getAllBundleProductsinCurrentOptiongroups(service.currentproductoptiongroups, 'productOptionComponents', 'hasOptions', 'productId');
             }else{
                 bundleproductIds.push(productId);
             }
-			
-			return getOptionGroups(bundleproductIds).then(function(response){
-				var optionGroups = response;
-				setcurrentproductoptiongroups(optionGroups[productId]);
-				return true;
-			}); 
-		}
+            
+            return getOptionGroups(bundleproductIds).then(function(response){
+                var optionGroups = response;
+                setcurrentproductoptiongroups(optionGroups[productId]);
+                return true;
+            }); 
+        }
 
-		function getSelectedoptionproduct() {
-			return service.Selectedoptionproduct;
-		}
+        function getSelectedoptionproduct() {
+            return service.Selectedoptionproduct;
+        }
 
-		function setSelectedoptionproduct(optionComponent) {
-			service.Selectedoptionproduct = {'productId':optionComponent.productId, 'productName': optionComponent.productName};
-		}
+        function setSelectedoptionproduct(optionComponent) {
+            service.Selectedoptionproduct = {'productId':optionComponent.productId, 'productName': optionComponent.productName};
+        }
 
         function getcurrentproductoptiongroups(){
-        	return service.currentproductoptiongroups;
+            return service.currentproductoptiongroups;
         }
 
         function setcurrentproductoptiongroups(result){
-        	service.currentproductoptiongroups = result;
+            service.currentproductoptiongroups = result;
         }
 
         // util method. a: option groups, b: field name to access product components, c:field to identify if product is bundle or not, d: field name to access product Id within product component.
@@ -104,19 +105,19 @@
         }
 
         function getrerenderHierarchy(){
-        	return service.rerenderHierarchy;
+            return service.rerenderHierarchy;
         }
 
         function setrerenderHierarchy(val){
-        	service.rerenderHierarchy = val;
+            service.rerenderHierarchy = val;
         }
 
         function getslectedOptionGroupProdId(){
-        	return service.slectedOptionGroupProdId;
+            return service.slectedOptionGroupProdId;
         }
 
         function setslectedOptionGroupProdId(val){
-        	service.slectedOptionGroupProdId = val;
+            service.slectedOptionGroupProdId = val;
         }
 
         function runConstraintRules(){
@@ -253,5 +254,5 @@
             return true;
             return false;
         }
-	}
+    }
 })();
